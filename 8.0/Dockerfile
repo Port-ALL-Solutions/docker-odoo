@@ -1,5 +1,7 @@
-FROM debian:jessie
-MAINTAINER Odoo S.A. <info@odoo.com>
+FROM ubuntu:xenial
+MAINTAINER Benoit Vezina <benoit@xtremxpert.com>
+#FROM debian:jessie
+#MAINTAINER Odoo S.A. <info@odoo.com>
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
@@ -11,7 +13,7 @@ RUN set -x; \
             node-clean-css \
             python-pyinotify \
             python-renderpm \
-            python-support \
+#            python-support \
         && curl -o wkhtmltox.deb -SL http://nightly.odoo.com/extra/wkhtmltox-0.12.1.2_linux-jessie-amd64.deb \
         && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
         && dpkg --force-depends -i wkhtmltox.deb \
@@ -31,8 +33,7 @@ RUN set -x; \
         && rm -rf /var/lib/apt/lists/* odoo.deb
 
 # Copy entrypoint script and Odoo configuration file
-COPY ./entrypoint.sh /
-COPY ./openerp-server.conf /etc/odoo/
+COPY rootfs /
 RUN chown odoo /etc/odoo/openerp-server.conf
 
 # Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
