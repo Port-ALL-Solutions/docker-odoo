@@ -2,6 +2,11 @@
 addons_path = /mnt/extra-addons,/usr/lib/python2.7/dist-packages/openerp/addons
 data_dir = /var/lib/odoo
 auto_reload = True
+admin_passwd = {{ DBADMPASS  | default("admindbpass")}}
+dbfilter = {{ DBNAME | False }}
+dbname = {{ DBNAME  | False }}
+db_host = {{  PGHOST  }}
+db_user = {{  PGUSER  }}
 ; admin_passwd = admin
 ; csv_internal_sep = ,
 ; db_maxconn = 64

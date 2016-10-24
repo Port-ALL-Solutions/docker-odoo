@@ -2,19 +2,25 @@ FROM ubuntu:xenial
 
 MAINTAINER Benoît "XtremXpert" Vézina <benoit@xtremxpert.com>
 
-ENV PGHOST=db \
-        PGUSER=odoo \                   # The Postgres user for odoo
-        PGPSWD=odoo \                   # Password for the Postgres user
-        DBADMPASS='R3!v4P4ss' \         # Password for the database manager
-        DBNAME='Reiva' \                # The Database name for DBname & DBfilter
-        VERSION=1.9-ubuntu \            # Internal version numbre
-        ODOO_VERSION=8.0 \              # version to clone
-        ODOO_RELEASE=20161018           # Date of the build
+COPY 	./rootfs/ /
+
+# Set the default config file
+ENV 	OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
+	PGHOST='db' \
+        PGUSER='odoo' \
+        PGPSWD='odoo' \
+        DBADMPASS='R3!v4P4ss' \
+        DBNAME='Reiva' \
+        VERSION='1.9-ubuntu' \
+	ODOO_VERSION='8.0' \
+	ODOO_RELEASE='20161018'
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN set -x; \
+RUN 	set -x; \
         apt-get update \
-        && apt-get install -y --no-install-recommends \
+	&& apt-get dist-upgrade -y \
+        && apt-get install -y \
+            build-essential \
             ca-certificates \
             curl \
             git \
@@ -22,46 +28,98 @@ RUN set -x; \
             node-clean-css \
             libffi-dev \
             libssl-dev \
+	    python-dev \
             python-pip \
             python-pyinotify \
             python-renderpm \
-        && pip install \
-            envtpl \
-            phonenumbers \       
-            pymysql \                   # Can be remove, use to access MySQL db
-            pysftp \                    # Use for sftp
-            soappy \                    # Can be remove, use for SOAP
-        && curl -o wkhtmltox.deb -SL http://nightly.odoo.com/extra/wkhtmltox-0.12.1.2_linux-jessie-amd64.deb \
-        && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
-        && dpkg --force-depends -i wkhtmltox.deb \
-        && apt-get -y install -f --no-install-recommends \
-        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
-        && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
+            wkhtmltopdf \
 
 # Install Odoo
-
-RUN set -x; \
-        curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
+        && curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo 'a845b017b46c5ea034e28e595f207bb0adfbf815 odoo.deb' | sha1sum -c - \
         && dpkg --force-depends -i odoo.deb \
         && apt-get update \
         && apt-get -y install -f --no-install-recommends \
-        && rm -rf /var/lib/apt/lists/* odoo.deb
+# Add other usefull python dependencies
+        && pip install \
+            envtpl \
+            num2words \
+            phonenumbers \
+            pymysql \
+            pysftp \
+            soappy \
 
 # Copy entrypoint script and Odoo configuration file
-COPY rootfs /
-RUN chown odoo /etc/odoo/openerp-server.conf
+	&& chown odoo /etc/odoo/openerp-server.conf \
+
+# Adding some OCA stuff
+	&& mkdir /tmp/OCA \
+	&& cd /tmp/OCA \
+# For changing taxes on commun rules
+	&& git clone -b 8.0 https://github.com/OCA/account-fiscal-rule.git  \
+	&& mv /tmp/OCA/account-fiscal-rule/account_fiscal_position_rule  /mnt/extra-addons/  \
+	&& mv /tmp/OCA/account-fiscal-rule/account_fiscal_position_rule_purchase  /mnt/extra-addons/  \
+	&& mv /tmp/OCA/account-fiscal-rule/account_fiscal_position_rule_sale  /mnt/extra-addons/  \
+	&& mv /tmp/OCA/account-fiscal-rule/account_fiscal_position_rule_stock  /mnt/extra-addons/  \
+
+# RMA Stuff for return
+	&& git clone -b 8.0 https://github.com/OCA/rma.git \
+	&& mv /tmp/OCA/rma/product_warranty /mnt/docker-addons/ \
+	&& mv /tmp/OCA/rma/crm_claim_rma /mnt/docker-addons/ \
+	&& mv /tmp/OCA/rma/crm_claim_rma_code /mnt/docker-addons/ \
+
+#Some E-commerce add-ons
+	&& git clone -b 8.0 https://github.com/OCA/e-commerce.git \
+	&& mv /tmp/OCA/e-commerce/website_sale_require_login /mnt/docker-addons/ \
+	&& mv /tmp/OCA/e-commerce/website_sale_suggest_create_account /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 https://github.com/OCA/website.git \
+	&& mv /tmp/OCA/website/website_menu_by_user_status /mnt/docker-addons/ \
+	&& mv /tmp/OCA/website/website_portal /mnt/docker-addons/ \
+	&& mv /tmp/OCA/website/website_portal_sale /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 http://gitlab.opengest.solutions/OCA/connector-telephony.git \
+	&& mv /tmp/OCA/connector-telephony/base_phone /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 https://github.com/OCA/partner-contact.git \
+	&& mv /tmp/OCA/partner-contact/partner_contact_birthdate /mnt/docker-addons/ \
+	&& mv /tmp/OCA/partner-contact/partner_firstname /mnt/docker-addons/ \
+	&& mv /tmp/OCA/partner-contact/partner_contact_gender /mnt/docker-addons/ \
+	&& mv /tmp/OCA/partner-contact/partner_second_lastname /mnt/docker-addons/ \
+	&& mv /tmp/OCA/partner-contact/partner_contact_personal_information_page /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 https://github.com/OCA/server-tools.git \
+	&& mv /tmp/OCA/server-tools/auditlog /mnt/docker-addons/ \
+	&& mv /tmp/OCA/server-tools/auto_backup /mnt/docker-addons/ \
+	&& mv /tmp/OCA/server-tools/web_context_tunnel /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 https://github.com/OCA/vertical-association.git \
+	&& mv /tmp/OCA/vertical-association/membership_variable_period /mnt/docker-addons/ \
+
+	&& git clone -b 8.0 https://github.com/OCA/l10n-canada.git \
+	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_BN /mnt/docker-addons/ \
+	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_NEQ /mnt/docker-addons/ \
+	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_SIN /mnt/docker-addons/ \
+	&& mv /tmp/OCA/l10n-canada/l10n_ca_qc_account_fiscal_position_rule /mnt/docker-addons/  \
+	&& mv /tmp/OCA/l10n-canada/l10n_ca_toponyms /mnt/docker-addons/ \
+
+# Use the odoo config file from the rootfs
+	&& mv /etc/odoo/openerp-server.conf /etc/odoo/openerp-server.conf.deb \
+	&& mv /etc/odoo/openerp-server.conf.docker /etc/odoo/openerp-server.conf \
 
 # Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
-RUN mkdir -p /mnt/extra-addons \
-        && chown -R odoo /mnt/extra-addons
+	&& mkdir -p /mnt/extra-addons \
+        && chown -R odoo /mnt/extra-addons \
+
+# Some clean up
+        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
+        && rm -rf /tmp/OCA /var/lib/apt/lists/* odoo.deb wkhtmltox.deb \
+
 VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
 
 # Expose Odoo services
 EXPOSE 8069 8071
 
-# Set the default config file
-ENV OPENERP_SERVER /etc/odoo/openerp-server.conf
 
 # Set default user when running the container
 USER odoo
