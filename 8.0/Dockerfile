@@ -1,7 +1,15 @@
 FROM ubuntu:xenial
-MAINTAINER Benoit Vezina <benoit@xtremxpert.com>
-#FROM debian:jessie
-#MAINTAINER Odoo S.A. <info@odoo.com>
+
+MAINTAINER Benoît "XtremXpert" Vézina <benoit@xtremxpert.com>
+
+ENV PGHOST=db \
+        PGUSER=odoo \                   # The Postgres user for odoo
+        PGPSWD=odoo \                   # Password for the Postgres user
+        DBADMPASS='R3!v4P4ss' \         # Password for the database manager
+        DBNAME='Reiva' \                # The Database name for DBname & DBfilter
+        VERSION=1.9-ubuntu \            # Internal version numbre
+        ODOO_VERSION=8.0 \              # version to clone
+        ODOO_RELEASE=20161018           # Date of the build
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 RUN set -x; \
@@ -9,11 +17,20 @@ RUN set -x; \
         && apt-get install -y --no-install-recommends \
             ca-certificates \
             curl \
+            git \
             node-less \
             node-clean-css \
+            libffi-dev \
+            libssl-dev \
+            python-pip \
             python-pyinotify \
             python-renderpm \
-#            python-support \
+        && pip install \
+            envtpl \
+            phonenumbers \       
+            pymysql \                   # Can be remove, use to access MySQL db
+            pysftp \                    # Use for sftp
+            soappy \                    # Can be remove, use for SOAP
         && curl -o wkhtmltox.deb -SL http://nightly.odoo.com/extra/wkhtmltox-0.12.1.2_linux-jessie-amd64.deb \
         && echo '40e8b906de658a2221b15e4e8cd82565a47d7ee8 wkhtmltox.deb' | sha1sum -c - \
         && dpkg --force-depends -i wkhtmltox.deb \
@@ -22,8 +39,7 @@ RUN set -x; \
         && rm -rf /var/lib/apt/lists/* wkhtmltox.deb
 
 # Install Odoo
-ENV ODOO_VERSION 8.0
-ENV ODOO_RELEASE 20161018
+
 RUN set -x; \
         curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
         && echo 'a845b017b46c5ea034e28e595f207bb0adfbf815 odoo.deb' | sha1sum -c - \
