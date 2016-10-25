@@ -1,0 +1,21 @@
+odoo:
+  ports:
+  - 80:8069/tcp
+  environment:
+    PGHOST: db
+    PGPASSWORD: odoopass
+    PGUSER: odoo
+  tty: true
+  image: xtremxpert/docker-odoo:10.0
+  links:
+  - db:db
+  stdin_open: true
+  
+db:
+  environment:
+    PGDATA: /var/lib/postgresql/data/pgdata
+    POSTGRES_PASSWORD: odoopass
+    POSTGRES_USER: odoo
+  tty: true
+  image: postgres:9.6
+  stdin_open: true
