@@ -10,6 +10,17 @@ odoo:
   links:
   - db:db
   stdin_open: true
+  volumes_from:
+  - odoo-data
+
+odoo-data:
+  tty: true
+  image: xtremxpert/docker-odoo:10.0
+  stdin_open: true
+  command:
+  - /bin/true
+  volumes:
+  - ./extra-addons:/mnt/extra-addons
   
 db:
   environment:
@@ -19,3 +30,19 @@ db:
   tty: true
   image: postgres:9.6
   stdin_open: true
+  volumes_from:
+  - db-data
+
+db-data:
+  environment:
+    PGDATA: /var/lib/postgresql/data/pgdata
+    POSTGRES_PASSWORD: odoopass
+    POSTGRES_USER: odoo
+  tty: true
+  image: postgres:9.6
+  command:
+  - /bin/true
+  stdin_open: true
+  volumes:
+  - ./pgdata:/var/lib/postgresql/data/pgdata
+

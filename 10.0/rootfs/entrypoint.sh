@@ -7,7 +7,7 @@ _envtpl() {
   envtpl "$1.tpl"
 }
 
-#_envtpl /etc/odoo/odoo.conf
+_envtpl /etc/odoo/odoo.conf
 
 # set odoo database host, port, user and password
 : ${PGHOST:=$DB_PORT_5432_TCP_ADDR}
@@ -15,16 +15,18 @@ _envtpl() {
 : ${PGUSER:=${DB_ENV_POSTGRES_USER:='postgres'}}
 : ${PGPASSWORD:=$DB_ENV_POSTGRES_PASSWORD}
 
+CONFIG=/etc/odoo/odoo.conf
+
 case "$1" in
 	--)
 		shift
-		exec odoo "$@"
+		exec odoo "$@" --config $CONFIG
 		;;
 	-*)
-		exec odoo "$@"
+		exec odoo "$@" --config $CONFIG
 		;;
 	*)
-		exec "$@"
+		exec "$@" --config $CONFIG
 esac
 
 exit 1

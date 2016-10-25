@@ -10,7 +10,6 @@ ENV 	OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
         PGUSER='odoo' \
         PGPSWD='odoo' \
         DBADMPASS='R3!v4P4ss' \
-        DBNAME='Reiva' \
         VERSION='1.9-ubuntu' \
 	    ODOO_VERSION='10.0' \
 	    ODOO_RELEASE='20161005'
@@ -86,9 +85,9 @@ RUN 	set -x; \
 
 # Use the odoo config file from the rootfs
 #	&& mv /etc/odoo/openerp-server.conf /etc/odoo/openerp-server.conf.deb \
-#RUN	mv /etc/odoo/odoo.conf /etc/odoo/odoo.conf.deb \
-#	&& mv /etc/odoo/openerp-server.conf.docker /etc/odoo/odoo.conf \
-RUN 	mv /etc/odoo/openerp-server.conf.docker /etc/odoo/odoo-server.conf \
+RUN	mv /etc/odoo/odoo.conf /etc/odoo/odoo.conf.deb \
+	&& mv /etc/odoo/odoo.conf.docker /etc/odoo/odoo.conf \
+#RUN 	mv /etc/odoo/odoo.conf.docker /etc/odoo/odoo-server.conf \
 	&& chown -R odoo /etc/odoo/ \
 
 # Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
