@@ -6,11 +6,13 @@ odoo:
     PGPASSWORD: odoopass
     PGUSER: odoo
   tty: true
+#  image: reg.portall.ca/reiva/docker-odoo:nbuntu
   image: xtremxpert/docker-odoo:8.0
   links:
   - db:db
   stdin_open: true
-  
+  volumes:
+  - ./addons:/mnt/extra-addons
 db:
   environment:
     PGDATA: /var/lib/postgresql/data/pgdata
