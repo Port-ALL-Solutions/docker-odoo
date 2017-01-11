@@ -6,6 +6,7 @@ odoo:
     PGPASSWORD: odoopass
     PGUSER: odoo
   tty: true
+#  image: test
   image: xtremxpert/docker-odoo:10.0
   links:
   - db:db
@@ -16,11 +17,12 @@ odoo:
 odoo-data:
   tty: true
   image: xtremxpert/docker-odoo:10.0
+#  image: test
   stdin_open: true
   command:
   - /bin/true
   volumes:
-  - ./extra-addons:/mnt/extra-addons
+  - /tmp/extra-addons:/mnt/extra-addons
   
 db:
   environment:
@@ -44,5 +46,5 @@ db-data:
   - /bin/true
   stdin_open: true
   volumes:
-  - ./pgdata:/var/lib/postgresql/data/pgdata
+  - /tmp/pgdata:/var/lib/postgresql/data/pgdata
 

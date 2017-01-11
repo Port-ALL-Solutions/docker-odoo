@@ -1,112 +1,73 @@
-FROM ubuntu:xenial
+#Starting from the image maintain by Odoo
+FROM odoo:10.0 
 
 MAINTAINER Benoît "XtremXpert" Vézina <benoit@xtremxpert.com>
 
-COPY 	./rootfs/ /
-
 # Set the default config file
-ENV 	OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
+ENV OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
 	PGHOST='db' \
-        PGUSER='odoo' \
-        PGPSWD='odoo' \
-        DBADMPASS='R3!v4P4ss' \
-        VERSION='1.9-ubuntu' \
-	    ODOO_VERSION='10.0' \
-	    ODOO_RELEASE='20161005'
+        PGUSER='dbuser' \
+        PGPSWD='dbpass' \
+        DBADMPASS='adminpass' \
+	VERSION='01-11-17.01'
+
+# Switching back from runing user (odoo) to root user
+USER root
 
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-RUN 	set -x; \
-        apt-get update \
-	&& apt-get dist-upgrade -y \
-        && apt-get install -y \
-            build-essential \
-            ca-certificates \
-            curl \
-            git \
-            node-less \
-            node-clean-css \
-            libffi-dev \
-            libssl-dev \
-	        python-dev \
-            python-pip \
-            python-pyinotify \
-            python-renderpm \
-#            wkhtmltopdf \
-            wkhtmltopdf 
+# First curl is not use cause not added the postgres repo
+RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+	echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main" > /etc/apt/sources.list.d/postgres.list && \
+	apt-get update && \
+# Adding nodejs repos
+	curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
+	apt-get dist-upgrade -y && \
+	apt-get install -y \
+		build-essential \
+		git \
+#		libffi6 \
+		libffi-dev \
+		libssl-dev \
+		nodejs \
+#		postgresql-client-9.5 \
+		python-dev \
+		unzip && \
 
-# Install Odoo
-RUN 	set -x; \
-        curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}rc1c.${ODOO_RELEASE}_all.deb \
-#        && curl -o odoo.deb -SL http://nightly.odoo.com/${ODOO_VERSION}/nightly/deb/odoo_${ODOO_VERSION}.${ODOO_RELEASE}_all.deb \
-        && echo '661ec52d205cea0d14418ed5e50cf6aacdd958b6 odoo.deb' | sha1sum -c - \
-        && dpkg --force-depends -i odoo.deb \
-        && apt-get update \
-        && apt-get -y install -f --no-install-recommends \
-# Add other usefull python dependencies
-        && pip install \
-            envtpl \
-            num2words \
-            phonenumbers \
-            pymysql \
-            pysftp \
-            soappy
+# Python dependecies
+	pip install \
+#		envtpl \
+		num2words \
+		phonenumbers \
+		pysftp && \
+#            	pymysql \
+#            	soappy && \
 
-#            soappy \
+# Installation de clean-css via node-js
+	npm install -g less less-plugin-clean-css
 
-# Adding some OCA stuff
-#	&& mkdir /tmp/OCA \
-#	&& cd /tmp/OCA \
+# Adding a little more stuff from OCA and Odoo apps store
+RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
+	cd /tmp/OCA && \
+	git clone https://github.com/OCA/server-tools.git && \
+	git clone https://github.com/OCA/partner-contact.git && \
+ 	git clone https://github.com/OCA/connector-telephony.git && \
+	mv server-tools/auto_backup /mnt/docker-addons/ && \
+	mv partner-contact/base_location /mnt/docker-addons/ && \
+	mv partner-contact/base_partner_sequence /mnt/docker-addons/ && \
+	mv partner-contact/partner_contact_gender /mnt/docker-addons/ && \
+	mv partner-contact/partner_contact_personal_information_page /mnt/docker-addons/ && \
+	mv partner-contact/partner_firstname /mnt/docker-addons/ && \
+	mv partner-contact/partner_identification /mnt/docker-addons/ && \
+	mv connector-telephony/base_phone /mnt/docker-addons/ && \
+	cd /tmp/ODOO && \
+	curl -sL -o website-animate.zip https://apps.odoo.com/loempia/download/website_animate/10.0.1.1/2SQQrz8rCw3U0qeOVrgm9A.zip?deps && \
+	curl -sL -o google-map-snippet.zip https://apps.odoo.com/loempia/download/snippet_google_map/10.0.1.1/10KtivJ3MWzmwgMzPkTzqh.zip?deps && \
+	curl -sL -o latest-post-snippet.zip https://apps.odoo.com/loempia/download/snippet_latest_posts/10.0.1.1/7gDzwQ8V9xPau2kvaf8njT.zip && \
+	unzip '*.zip' && \
+	rm -rf *.zip && \
+	mv * /mnt/docker-addons	&& \
+# Adding that /mnt/docker-addons to the list of addons dir
+	sed -i 's/extra-addons/extra-addons,\/mnt\/docker-addons/g' /etc/odoo/odoo.conf
 
-
-#	&& git clone http://gitlab.opengest.solutions/OCA/connector-telephony.git \
-#	&& mv /tmp/OCA/connector-telephony/base_phone /mnt/docker-addons/ \
-
-#	&& git clone https://github.com/OCA/partner-contact.git \
-#	&& mv /tmp/OCA/partner-contact/partner_contact_birthdate /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/partner-contact/partner_firstname /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/partner-contact/partner_contact_gender /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/partner-contact/partner_second_lastname /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/partner-contact/partner_contact_personal_information_page /mnt/docker-addons/ \
-
-#	&& git clone https://github.com/OCA/server-tools.git \
-#	&& mv /tmp/OCA/server-tools/auditlog /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/server-tools/web_context_tunnel /mnt/docker-addons/ \
-
-#	&& git clone https://github.com/OCA/vertical-association.git \
-#	&& mv /tmp/OCA/vertical-association/membership_initial_fee /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/vertical-association/membership_variable_period /mnt/docker-addons/ \
-
-#	&& git clone https://github.com/OCA/l10n-canada.git \
-#	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_BN /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_NEQ /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/l10n-canada/res_partner_attributes_add_SIN /mnt/docker-addons/ \
-#	&& mv /tmp/OCA/l10n-canada/l10n_ca_toponyms /mnt/docker-addons/
-#	&& mv /tmp/OCA/l10n-canada/l10n_ca_toponyms /mnt/docker-addons/ \
-
-# Use the odoo config file from the rootfs
-#	&& mv /etc/odoo/openerp-server.conf /etc/odoo/openerp-server.conf.deb \
-RUN	mv /etc/odoo/odoo.conf /etc/odoo/odoo.conf.deb \
-	&& mv /etc/odoo/odoo.conf.docker /etc/odoo/odoo.conf \
-#RUN 	mv /etc/odoo/odoo.conf.docker /etc/odoo/odoo-server.conf \
-	&& chown -R odoo /etc/odoo/ \
-
-# Mount /var/lib/odoo to allow restoring filestore and /mnt/extra-addons for users addons
-	&& mkdir -p /mnt/extra-addons \
-        && chown -R odoo /mnt/extra-addons \
-
-# Some clean up
-        && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false -o APT::AutoRemove::SuggestsImportant=false npm \
-        && rm -rf /tmp/OCA /var/lib/apt/lists/* odoo.deb wkhtmltox.deb \
-
-VOLUME ["/var/lib/odoo", "/mnt/extra-addons"]
-
-# Expose Odoo services
-EXPOSE 8069 8071
-
-
-# Set default user when running the container
+#switch back to runing user odoo
 USER odoo
-
-ENTRYPOINT ["/entrypoint.sh"]
-CMD ["odoo"]
-
