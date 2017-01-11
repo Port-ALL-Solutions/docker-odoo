@@ -51,6 +51,8 @@ RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
 	git clone https://github.com/OCA/server-tools.git && \
 	git clone https://github.com/OCA/partner-contact.git && \
  	git clone https://github.com/OCA/connector-telephony.git && \
+	git clone https://github.com/OCA/project.git && \
+	git clone https://github.com/OCA/web.git && \
 	mv server-tools/auto_backup /mnt/docker-addons/ && \
 	mv partner-contact/base_location /mnt/docker-addons/ && \
 	mv partner-contact/base_partner_sequence /mnt/docker-addons/ && \
@@ -59,6 +61,11 @@ RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
 	mv partner-contact/partner_firstname /mnt/docker-addons/ && \
 	mv partner-contact/partner_identification /mnt/docker-addons/ && \
 	mv connector-telephony/base_phone /mnt/docker-addons/ && \
+	mv project/project_description /mnt/docker-addons/ && \
+	mv project/project_task_default_stage /mnt/docker-addons/ && \
+	mv project/project_task_dependency /mnt/docker-addons/ && \
+	mv web/web_favicon /mnt/docker-addons/ && \
+	mv web/web_responsive /mnt/docker-addons/ && \
 	cd /tmp/ODOO && \
 	curl -sL -o website-animate.zip https://apps.odoo.com/loempia/download/website_animate/10.0.1.1/2SQQrz8rCw3U0qeOVrgm9A.zip?deps && \
 	curl -sL -o google-map-snippet.zip https://apps.odoo.com/loempia/download/snippet_google_map/10.0.1.1/10KtivJ3MWzmwgMzPkTzqh.zip?deps && \
