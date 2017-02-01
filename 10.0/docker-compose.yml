@@ -6,8 +6,8 @@ odoo:
     PGPASSWORD: odoopass
     PGUSER: odoo
   tty: true
-#  image: test
-  image: xtremxpert/docker-odoo:10.0
+  image: test2
+#  image: xtremxpert/docker-odoo:10.0
   links:
   - db:db
   stdin_open: true

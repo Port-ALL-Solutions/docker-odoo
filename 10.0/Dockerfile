@@ -7,13 +7,12 @@ MAINTAINER Benoît "XtremXpert" Vézina <benoit@xtremxpert.com>
 ENV OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
 	PGHOST='db' \
         PGUSER='dbuser' \
-        PGPSWD='dbpass' \
+        PGPASSWORD='dbpass' \
         DBADMPASS='adminpass' \
 	VERSION='01-11-17.01'
 
 # Switching back from runing user (odoo) to root user
 USER root
-
 # Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
 # First curl is not use cause not added the postgres repo
 RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
@@ -29,22 +28,22 @@ RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
 		libffi-dev \
 		libssl-dev \
 		nodejs \
-#		postgresql-client-9.5 \
 		python-dev \
 		unzip && \
 
 # Python dependecies
 	pip install \
-#		envtpl \
+		appdirs \
+		envtpl \
 		num2words \
+		packaging \
 		phonenumbers \
 		pysftp && \
-#            	pymysql \
-#            	soappy && \
 
 # Installation de clean-css via node-js
 	npm install -g less less-plugin-clean-css
 
+COPY ./rootfs/ /
 # Adding a little more stuff from OCA and Odoo apps store
 RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
 	cd /tmp/OCA && \
@@ -74,7 +73,8 @@ RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
 	rm -rf *.zip && \
 	mv * /mnt/docker-addons	&& \
 # Adding that /mnt/docker-addons to the list of addons dir
-	sed -i 's/extra-addons/extra-addons,\/mnt\/docker-addons/g' /etc/odoo/odoo.conf
+	sed -i 's/extra-addons/extra-addons,\/mnt\/docker-addons/g' /etc/odoo/odoo.conf && \
+	chown -R odoo /etc/odoo /entrypoint.sh
 
 #switch back to runing user odoo
 USER odoo
