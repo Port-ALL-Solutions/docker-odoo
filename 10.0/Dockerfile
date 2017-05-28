@@ -38,7 +38,8 @@ RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
 		num2words \
 		packaging \
 		phonenumbers \
-		pysftp && \
+		pysftp \
+		viivakoodi && \
 
 # Installation de clean-css via node-js
 	npm install -g less less-plugin-clean-css
