@@ -1,50 +1,35 @@
 odoo:
   ports:
-  - 80:8069/tcp
+  - 88:8069/tcp
   environment:
     PGHOST: db
     PGPASSWORD: odoopass
     PGUSER: odoo
   tty: true
-  image: test2
+  image: docker-odoo:10.0
 #  image: xtremxpert/docker-odoo:10.0
   links:
   - db:db
   stdin_open: true
-  volumes_from:
-  - odoo-data
-
-odoo-data:
-  tty: true
-  image: xtremxpert/docker-odoo:10.0
-#  image: test
-  stdin_open: true
-  command:
-  - /bin/true
   volumes:
-  - /tmp/extra-addons:/mnt/extra-addons
-  
+  - /tmp/o10/extra-addons:/mnt/extra-addons
+  - /tmp/o10/filestore:/var/lib/odoo/filestore
+  - /tmp/o10/config:/etc/odoo
 db:
   environment:
     PGDATA: /var/lib/postgresql/data/pgdata
     POSTGRES_PASSWORD: odoopass
     POSTGRES_USER: odoo
   tty: true
-  image: postgres:9.6
-  stdin_open: true
-  volumes_from:
-  - db-data
-
-db-data:
-  environment:
-    PGDATA: /var/lib/postgresql/data/pgdata
-    POSTGRES_PASSWORD: odoopass
-    POSTGRES_USER: odoo
-  tty: true
-  image: postgres:9.6
-  command:
-  - /bin/true
+  image: postgres:9.6-alpine
   stdin_open: true
   volumes:
-  - /tmp/pgdata:/var/lib/postgresql/data/pgdata
-
+  - /tmp/o10/pgdata:/var/lib/postgresql/data/pgdata
+pga:
+    image: lunyuan/phppgadmin
+    stdin_open: true
+    tty: true
+    links:
+    - db:db
+    ports:
+    - 89:80

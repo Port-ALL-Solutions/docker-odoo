@@ -3,84 +3,54 @@ FROM odoo:10.0
 
 MAINTAINER Benoît "XtremXpert" Vézina <benoit@xtremxpert.com>
 
-# Set the default config file
-ENV OPENERP_SERVER='/etc/odoo/openerp-server.conf' \
-	PGHOST='db' \
-        PGUSER='dbuser' \
-        PGPASSWORD='dbpass' \
-        DBADMPASS='adminpass' \
-	VERSION='01-11-17.01'
+# Set the default Env variable
+ENV PGHOST='db' \
+    PGUSER='dbuser' \
+    PGPASSWORD='dbpass' \
+    DBADMPASS='adminpass' \
+	VERSION='09-05-17.01' \
+	ODOO_UID='1000' \
+	ODOO_GID='1000' \
+	MQT_URI='https://github.com/LasLabs/maintainer-quality-tools/archive/bugfix/script-shebang.tar.gz'
 
 # Switching back from runing user (odoo) to root user
 USER root
-# Install some deps, lessc and less-plugin-clean-css, and wkhtmltopdf
-# First curl is not use cause not added the postgres repo
-RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
-	echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main" > /etc/apt/sources.list.d/postgres.list && \
-	apt-get update && \
+
+# Install some deps, lessc and less-plugin-clean-css, wkhtmltopdf and update version of postgres=client
+RUN	curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - \
+	&& echo "deb http://apt.postgresql.org/pub/repos/apt/ jessie-pgdg main" > /etc/apt/sources.list.d/postgres.list \
+	&& apt-get update \
+
 # Adding nodejs repos
-	curl -sL https://deb.nodesource.com/setup_4.x | bash - && \
-	apt-get dist-upgrade -y && \
-	apt-get install -y \
+	&& curl -sL https://deb.nodesource.com/setup_4.x | bash - \
+	&& apt-get dist-upgrade -y \
+	&& apt-get install -y \
 		build-essential \
 		git \
-#		libffi6 \
 		libffi-dev \
 		libssl-dev \
 		nodejs \
 		python-dev \
-		unzip && \
+		unzip \
 
-# Python dependecies
-	pip install \
-		appdirs \
-		envtpl \
-		num2words \
-		packaging \
-		phonenumbers \
-		pysftp \
-		viivakoodi && \
+# Updating PIP so oca_clone_dependendies can work
+	&& pip install --upgrade pip \
 
 # Installation de clean-css via node-js
-	npm install -g less less-plugin-clean-css
+	&& npm install -g less less-plugin-clean-css \
+
+# Installing su-exec to allow to swith user to odoo in the entrypoint	
+	&& cd /tmp \
+	&& git clone https://github.com/ncopa/su-exec \
+	&& cd su-exec \
+	&& make \
+	&& mv su-exec /usr/bin/ \
+
+# Installing the OCA maintainer-quality-tools
+	&& curl -sL "$MQT_URI" | tar -xz -C /opt/ \
+    && ln -s /opt/maintainer-quality-tools-*/travis/clone_oca_dependencies /usr/bin \
+    && ln -s /opt/maintainer-quality-tools-*/travis/getaddons.py /usr/bin/get_addons \
+    && chmod +x /usr/bin/get_addons \
+    && mkdir -p /opt/community
 
 COPY ./rootfs/ /
-# Adding a little more stuff from OCA and Odoo apps store
-RUN mkdir /tmp/OCA /tmp/ODOO /mnt/docker-addons && \
-	cd /tmp/OCA && \
-	git clone https://github.com/OCA/server-tools.git && \
-	git clone https://github.com/OCA/partner-contact.git && \
- 	git clone https://github.com/OCA/connector-telephony.git && \
-	git clone https://github.com/OCA/project.git && \
-	git clone https://github.com/OCA/web.git && \
-	mv server-tools/auto_backup /mnt/docker-addons/ && \
-	mv partner-contact/base_location /mnt/docker-addons/ && \
-	mv partner-contact/base_partner_sequence /mnt/docker-addons/ && \
-	mv partner-contact/partner_address_street3 /mnt/docker-addons/ && \
-	mv partner-contact/partner_contact_gender /mnt/docker-addons/ && \
-	mv partner-contact/partner_contact_personal_information_page /mnt/docker-addons/ && \
-	mv partner-contact/partner_external_map /mnt/docker-addons/ && \
-	mv partner-contact/partner_firstname /mnt/docker-addons/ && \
-	mv partner-contact/partner_identification /mnt/docker-addons/ && \
-	mv partner-contact/partner_street_number /mnt/docker-addons/ && \
-	mv connector-telephony/base_phone /mnt/docker-addons/ && \
-	mv connector-telephony/asterisk_click2dial /mnt/docker-addons/ && \
-	mv project/project_description /mnt/docker-addons/ && \
-	mv project/project_task_default_stage /mnt/docker-addons/ && \
-	mv project/project_task_dependency /mnt/docker-addons/ && \
-	mv web/web_favicon /mnt/docker-addons/ && \
-	mv web/web_responsive /mnt/docker-addons/ && \
-	mv web/web_sheet_full_width /mnt/docker-addons/ && \
-	cd /tmp/ODOO && \
-	curl -sL -o website-animate.zip https://apps.odoo.com/loempia/download/website_animate/10.0.1.1/2SQQrz8rCw3U0qeOVrgm9A.zip?deps && \
-	curl -sL -o google-map-snippet.zip https://apps.odoo.com/loempia/download/snippet_google_map/10.0.1.1/10KtivJ3MWzmwgMzPkTzqh.zip?deps && \
-	curl -sL -o latest-post-snippet.zip https://apps.odoo.com/loempia/download/snippet_latest_posts/10.0.1.1/7gDzwQ8V9xPau2kvaf8njT.zip && \
-	unzip '*.zip' && \
-	rm -rf *.zip && \
-	mv * /mnt/docker-addons	&& \
-# Adding that /mnt/docker-addons to the list of addons dir
-	sed -i 's/extra-addons/extra-addons,\/mnt\/docker-addons/g' /etc/odoo/odoo.conf && \
-	chown -R odoo /etc/odoo /entrypoint.sh
-
-#switch back to runing user odoo
-USER odoo
